@@ -1216,3 +1216,6 @@ header h1 {
   .top-bar { padding: 15px 20px; }
   .blobs-container { height: 260px; }
 }
+.navbar{
+    background:#2563eb;
+}
