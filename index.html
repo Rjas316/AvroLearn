@@ -712,7 +712,7 @@
         const list = document.getElementById("notesList");
         const notes = JSON.parse(localStorage.getItem("notes") || "[]");
         list.innerHTML = notes.map((note, i) => {
-          return '<div class="note-item"><div><strong>' + note.title + '</strong><br><small>' + note.date + '</small><br>' + note.content.substring(0, 50) + '...</div><button onclick="deleteNote(' + i + ')" style="width:auto;">Delete</button></div>';
+          return '<div class="note-item"><div><strong>' + note.title + '</strong><br><small>' + note.date + '</small><br>' + note.content.substring(0, 50) + '...</div><button onclick="deleteNote(' + i + ')">Delete</button></div>';
         }).join("");
       }
       window.renderNotes = renderNotes;
@@ -732,7 +732,7 @@
         document.querySelector(".now-playing").textContent = isPlaying ? "Now Playing: " + currentTrack : "Paused";
       };
       window.stopMusic = function () { isPlaying = false; document.getElementById("playBtn").textContent = "Play"; };
-      window.selectTrack = function (track) { currentTrack = track; isPlaying = true; document.getElementById("playBtn").textContent = "Pause"; document.querySelector(".now-playing").textContent = "Now Playing: " + track; };
+      window.selectTrack = function (track) { currentTrack = track; isPlaying = true; document.getElementById("playBtn").textContent = "Pause"; document.querySelector(".now-playing").textContent = "Now Playing: " + currentTrack; };
 
       window.askQuestion = function () {
         const q = document.getElementById("questionInput").value.trim();
@@ -839,18 +839,8 @@
       updateDashboardStats();
     })();
     (function(){
-      alert("this site does not use  ar eal db so be sure your account is saved via local storage")
-
-      
+      alert("this site does not use a real db so be sure your account is saved via local storage")
     })()
   </script>
-<head>
-    <title>Avro Learn</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<header class="navbar">
-    <h1>Avro Learn</h1>
-</header>
-
-
-
+</body>
+</html>
