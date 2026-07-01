@@ -6,22 +6,99 @@
   <title>Avro Learn</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
-    .db-notice {
-      background-color: #fff3cd;
-      border: 1px solid #ffc107;
-      color: #856404;
-      padding: 10px 15px;
-      border-radius: 4px;
-      margin-bottom: 15px;
-      font-size: 12px;
+    .agreement-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .agreement-modal.active {
+      display: flex;
+    }
+
+    .agreement-modal-content {
+      background-color: white;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 500px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
       text-align: center;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .agreement-modal-content h2 {
+      color: #1e293b;
+      margin-bottom: 15px;
+      font-size: 1.5rem;
+    }
+
+    .agreement-modal-content p {
+      color: #64748b;
+      margin-bottom: 25px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .agreement-modal-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .agreement-btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .agree-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      flex: 1;
+      max-width: 150px;
+    }
+
+    .agree-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .agree-btn:active {
+      transform: translateY(0);
     }
   </style>
 </head>
 <body>
-  <!-- Database Notice -->
-  <div class="db-notice">
-    ⚠️ Note: This site does not use a real database. Please save your account via local storage.
+  <!-- Agreement Modal -->
+  <div class="agreement-modal" id="agreementModal">
+    <div class="agreement-modal-content">
+      <h2>⚠️ Important Notice</h2>
+      <p>This site does not use a real database. Please save your account via local storage before proceeding.</p>
+      <div class="agreement-modal-buttons">
+        <button class="agreement-btn agree-btn" onclick="agreeAndContinue()">I Agree</button>
+      </div>
+    </div>
   </div>
 
   <!-- LANDING PAGE -->
@@ -491,6 +568,24 @@
       const appScreen = document.getElementById("appScreen");
       const welcomeUser = document.getElementById("welcomeUser");
       const message = document.getElementById("message");
+      const agreementModal = document.getElementById("agreementModal");
+      
+      let agreementAccepted = false;
+
+      window.agreeAndContinue = function() {
+        agreementAccepted = true;
+        agreementModal.classList.remove("active");
+      };
+
+      // Show agreement on link navigation
+      document.addEventListener("click", function(e) {
+        if (e.target.tagName === "A" && e.target.href && !agreementAccepted) {
+          e.preventDefault();
+          agreementModal.classList.add("active");
+          const targetUrl = e.target.href;
+          window.currentTargetUrl = targetUrl;
+        }
+      });
 
       window.openLogin = function () {
         landingPage.style.display = "none";
