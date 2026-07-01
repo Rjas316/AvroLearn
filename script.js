@@ -1,480 +1,955 @@
-(function() {
-  const landingPage = document.getElementById("landingPage");
-  const form = document.getElementById("loginForm");
-  const loadingScreen = document.getElementById("loadingScreen");
-  const loginScreen = document.getElementById("loginScreen");
-  const appScreen = document.getElementById("appScreen");
-  const welcomeUser = document.getElementById("welcomeUser");
-  const message = document.getElementById("message");
-
-  console.log("Lema Learning App loaded");
-  console.log("Use ANY email and password to sign in!");
-
-  // ==================== NAVIGATION ====================
-  window.openLogin = function() {
-    if (landingPage) landingPage.style.display = "none";
-    if (loginScreen) loginScreen.classList.remove("hidden");
-  };
-
-  window.goToLanding = function() {
-    if (landingPage) landingPage.style.display = "flex";
-    if (loginScreen) loginScreen.classList.add("hidden");
-    if (appScreen) appScreen.classList.add("hidden");
-  };
-
-  // ==================== FIREBASE SETUP ====================
-  const firebaseConfig = {
-    apiKey: "AIzaSyDummyKeyReplaceWithYours",
-    authDomain: "your-project.firebaseapp.com",
-    databaseURL: "https://your-project-default-rtdb.firebaseio.com",
-    projectId: "your-project",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abc123def456"
-  };
-
-  let firebaseReady = false;
-  let db = null;
-
-  try {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-    firebaseReady = true;
-    const fbStatus = document.getElementById("firebaseStatus");
-    if (fbStatus) fbStatus.textContent = "Connected to Firebase";
-  } catch (e) {
-    firebaseReady = false;
-    const fbStatus = document.getElementById("firebaseStatus");
-    if (fbStatus) fbStatus.textContent = "Offline mode — replace config with your Firebase keys";
-  }
-
-  // ==================== CUTE LOADING ANIMATION ====================
-  function showLoadingSequence(email) {
-    const loadingMessages = [
-      { text: "Preparing your dashboard... 🎨", delay: 250 },
-      { text: "Loading your personal stats... 📊", delay: 300 },
-      { text: "Setting up your AI tutor... 🤖", delay: 350 },
-      { text: "Syncing study materials... 📚", delay: 400 },
-      { text: "Gathering cute animals... 🐱🐶", delay: 350 },
-      { text: "Almost ready... ✨", delay: 350 }
-    ];
-
-    const loadingMessage = document.getElementById("loadingMessage");
-    if (!loadingMessage) return;
-    
-    let totalDelay = 0;
-    loadingMessages.forEach(function(item) {
-      setTimeout(function() {
-        if (loadingMessage) loadingMessage.textContent = item.text;
-      }, totalDelay);
-      totalDelay += item.delay;
-    });
-
-    setTimeout(function() {
-      if (loadingScreen) loadingScreen.classList.add("hidden");
-      if (appScreen) appScreen.classList.remove("hidden");
-      if (welcomeUser) welcomeUser.textContent = "Welcome back, " + email + "! 🎉";
-      updateDashboardStats();
-      renderNotes();
-      renderFlashcardDeck();
-    }, 2000);
-  }
-
-  // ==================== LOGIN ====================
-  if (form) {
-    form.addEventListener("submit", function(e) {
-      e.preventDefault();
-      
-      const emailInput = document.getElementById("email");
-      const passwordInput = document.getElementById("password");
-      
-      if (!emailInput || !passwordInput) {
-        if (message) {
-          message.textContent = "Error: Form elements not found.";
-          message.style.color = "#ef4444";
-        }
-        return;
-      }
-      
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-
-      if (!email) {
-        if (message) { message.textContent = "Please enter your email address."; message.style.color = "#ef4444"; }
-        return;
-      }
-
-      if (!email.includes("@") || !email.includes(".")) {
-        if (message) { message.textContent = "Please enter a valid email address."; message.style.color = "#ef4444"; }
-        return;
-      }
-
-      if (!password) {
-        if (message) { message.textContent = "Please enter your password."; message.style.color = "#ef4444"; }
-        return;
-      }
-
-      if (message) { message.textContent = ""; message.style.color = ""; }
-      if (loginScreen) loginScreen.classList.add("hidden");
-      if (loadingScreen) loadingScreen.classList.remove("hidden");
-      showLoadingSequence(email);
-    });
-  }
-
-  // ==================== TABS ====================
-  window.showTab = function(event, tabName) {
-    const allContents = document.querySelectorAll(".tab-content");
-    const allTabs = document.querySelectorAll(".tab");
-    
-    allContents.forEach(function(t) { t.classList.remove("active"); });
-    allTabs.forEach(function(t) { t.classList.remove("active"); });
-    
-    var targetContent = document.getElementById(tabName);
-    if (targetContent) targetContent.classList.add("active");
-    if (event && event.target) event.target.classList.add("active");
-    
-    if (tabName === "dashboard") updateDashboardStats();
-    if (tabName === "aiTutor") updateAISuggestions();
-    if (tabName === "quizzes") loadQuiz();
-  };
-
-  // ==================== DASHBOARD ====================
-  function updateDashboardStats() {
-    var notesCountEl = document.getElementById("notesCount");
-    var studyHoursEl = document.getElementById("studyHours");
-    var tasksDoneEl = document.getElementById("tasksDone");
-    var flashcardCountEl = document.getElementById("flashcardCount");
-    
-    if (notesCountEl) notesCountEl.textContent = JSON.parse(localStorage.getItem("notes") || "[]").length;
-    if (studyHoursEl) studyHoursEl.textContent = Math.floor(Math.random() * 20 + 5);
-    if (tasksDoneEl) tasksDoneEl.textContent = document.querySelectorAll("#workList li.done").length;
-    if (flashcardCountEl) flashcardCountEl.textContent = JSON.parse(localStorage.getItem("flashcards") || "[]").length;
-  }
-
-  // ==================== WORK TRACKER ====================
-  window.addWork = function() {
-    var task = document.getElementById("workInput").value.trim();
-    var deadline = document.getElementById("workDeadline").value;
-    if (!task) return;
-
-    var li = document.createElement("li");
-    li.innerHTML = '<span>' + task + (deadline ? ' - ' + deadline : '') + '</span><div style="display:flex;gap:8px;"><button onclick="toggleWorkDone(this)">Done</button><button onclick="deleteWork(this)">Delete</button></div>';
-    li.dataset.status = "pending";
-    document.getElementById("workList").appendChild(li);
-    document.getElementById("workInput").value = "";
-    document.getElementById("workDeadline").value = "";
-    updateDashboardStats();
-  };
-
-  window.toggleWorkDone = function(btn) { btn.closest("li").classList.toggle("done"); updateDashboardStats(); };
-  window.deleteWork = function(btn) { btn.closest("li").remove(); updateDashboardStats(); };
-
-  window.filterWork = function(event, filter) {
-    document.querySelectorAll(".filter-btn").forEach(function(b) { b.classList.remove("active"); });
-    if (event && event.target) event.target.classList.add("active");
-    document.querySelectorAll("#workList li").forEach(function(li) {
-      if (filter === "all") li.style.display = "flex";
-      else if (filter === "done") li.style.display = li.classList.contains("done") ? "flex" : "none";
-      else li.style.display = !li.classList.contains("done") ? "flex" : "none";
-    });
-  };
-
-  // ==================== QUIZZES ====================
-  var quizQuestions = [
-    { q: "What is the capital of France?", options: ["London", "Paris", "Berlin", "Madrid"], answer: 1 },
-    { q: "What is 5 + 3?", options: ["6", "7", "8", "9"], answer: 2 },
-    { q: "Which planet is closest to the Sun?", options: ["Venus", "Mars", "Mercury", "Earth"], answer: 2 },
-    { q: "What is H2O?", options: ["Oxygen", "Water", "Hydrogen", "Salt"], answer: 1 },
-    { q: "Who wrote Romeo and Juliet?", options: ["Dickens", "Shakespeare", "Austen", "Hemingway"], answer: 1 }
-  ];
-
-  window.loadQuiz = function() {
-    var quizQuestionEl = document.getElementById("quizQuestion");
-    var quizOptionsEl = document.getElementById("quizOptions");
-    var quizResultEl = document.getElementById("quizResult");
-    if (!quizQuestionEl || !quizOptionsEl) return;
-    
-    var question = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
-    quizQuestionEl.innerHTML = '<h3 style="color:#1e293b;">' + question.q + '</h3>';
-    quizOptionsEl.innerHTML = question.options.map(function(opt, i) {
-      return '<button onclick="checkAnswer(' + i + ', ' + question.answer + ')" style="width:auto;display:inline-block;margin:5px;">' + opt + '</button>';
-    }).join("");
-    if (quizResultEl) quizResultEl.textContent = "";
-  };
-
-  window.checkAnswer = function(selected, correct) {
-    var result = document.getElementById("quizResult");
-    if (!result) return;
-    if (selected === correct) { result.textContent = "Correct!"; result.style.color = "#4caf50"; }
-    else { result.textContent = "Wrong answer. Try again!"; result.style.color = "#f44336"; }
-  };
-
-  // ==================== CALCULATOR ====================
-  window.appendToCalc = function(value) { var d = document.getElementById("calcDisplay"); if (d) d.value += value; };
-  window.clearCalc = function() { var d = document.getElementById("calcDisplay"); if (d) d.value = ""; };
-  window.calculate = function() {
-    var d = document.getElementById("calcDisplay");
-    if (!d) return;
-    try { d.value = eval(d.value); } catch (e) { d.value = "Error"; }
-  };
-
-  // ==================== POMODORO ====================
-  var pomodoroTimer, pomodoroSeconds = 1500, pomodoroRunning = false;
-
-  function updateTimerDisplay() {
-    var d = document.getElementById("timerDisplay");
-    if (!d) return;
-    var m = Math.floor(pomodoroSeconds / 60);
-    var s = pomodoroSeconds % 60;
-    d.textContent = m + ":" + s.toString().padStart(2, "0");
-  }
-
-  window.setPomodoro = function(minutes) { window.pausePomodoro(); pomodoroSeconds = minutes * 60; updateTimerDisplay(); };
-  window.startPomodoro = function() {
-    if (pomodoroRunning) return;
-    pomodoroRunning = true;
-    pomodoroTimer = setInterval(function() {
-      if (pomodoroSeconds > 0) { pomodoroSeconds--; updateTimerDisplay(); }
-      else { clearInterval(pomodoroTimer); pomodoroRunning = false; }
-    }, 1000);
-  };
-  window.pausePomodoro = function() { clearInterval(pomodoroTimer); pomodoroRunning = false; };
-  window.resetPomodoro = function() { window.pausePomodoro(); pomodoroSeconds = 1500; updateTimerDisplay(); };
-  updateTimerDisplay();
-
-  // ==================== FLASHCARDS ====================
-  var flashcards = JSON.parse(localStorage.getItem("flashcards") || "[]");
-  var flashcardIndex = 0, isFlipped = false;
-
-  window.addFlashcard = function() {
-    var q = document.getElementById("flashcardQuestion").value.trim();
-    var a = document.getElementById("flashcardAnswer").value.trim();
-    if (!q || !a) return;
-    flashcards.push({ q: q, a: a });
-    localStorage.setItem("flashcards", JSON.stringify(flashcards));
-    renderFlashcardDeck();
-    document.getElementById("flashcardQuestion").value = "";
-    document.getElementById("flashcardAnswer").value = "";
-    updateDashboardStats();
-  };
-
-  function renderFlashcardDeck() {
-    var deck = document.getElementById("flashcardDeck");
-    if (!deck) return;
-    deck.innerHTML = flashcards.map(function(card, i) {
-      return '<div class="mini-card" onclick="removeFlashcard(' + i + ')">' + card.q + ' X</div>';
-    }).join("");
-  }
-
-  window.studyFlashcards = function() {
-    if (flashcards.length === 0) return alert("Add some flashcards first!");
-    flashcardIndex = 0; isFlipped = false;
-    document.getElementById("flashcardViewer").classList.remove("hidden");
-    showFlashcard();
-  };
-
-  function showFlashcard() {
-    if (flashcardIndex >= flashcards.length) { document.getElementById("flashcardViewer").classList.add("hidden"); return; }
-    isFlipped = false;
-    var t = document.getElementById("flashcardText");
-    if (t) t.textContent = flashcards[flashcardIndex].q;
-  }
-
-  window.flipFlashcard = function() {
-    isFlipped = !isFlipped;
-    var t = document.getElementById("flashcardText");
-    if (t) t.textContent = isFlipped ? flashcards[flashcardIndex].a : flashcards[flashcardIndex].q;
-  };
-  window.nextFlashcard = function() { flashcardIndex++; showFlashcard(); };
-  window.removeFlashcard = function(index) { flashcards.splice(index, 1); localStorage.setItem("flashcards", JSON.stringify(flashcards)); renderFlashcardDeck(); updateDashboardStats(); };
-
-  // ==================== NOTES ====================
-  window.saveNote = function() {
-    var title = document.getElementById("noteTitle").value.trim();
-    var content = document.getElementById("noteContent").value.trim();
-    if (!title || !content) return;
-    var notes = JSON.parse(localStorage.getItem("notes") || "[]");
-    notes.push({ title: title, content: content, date: new Date().toLocaleString() });
-    localStorage.setItem("notes", JSON.stringify(notes));
-    renderNotes();
-    document.getElementById("noteTitle").value = "";
-    document.getElementById("noteContent").value = "";
-    updateDashboardStats();
-  };
-
-  function renderNotes() {
-    var list = document.getElementById("notesList");
-    if (!list) return;
-    var notes = JSON.parse(localStorage.getItem("notes") || "[]");
-    list.innerHTML = notes.map(function(note, i) {
-      return '<div class="note-item"><div><strong>' + note.title + '</strong><br><small>' + note.date + '</small><br>' + note.content.substring(0, 50) + '...</div><button onclick="deleteNote(' + i + ')" style="width:auto;">Delete</button></div>';
-    }).join("");
-  }
-  window.deleteNote = function(index) { var notes = JSON.parse(localStorage.getItem("notes") || "[]"); notes.splice(index, 1); localStorage.setItem("notes", JSON.stringify(notes)); renderNotes(); updateDashboardStats(); };
-
-  // ==================== MUSIC ====================
-  var isPlaying = false, currentTrack = "Lo-fi Beats";
-  window.toggleMusic = function() {
-    var btn = document.getElementById("playBtn"); isPlaying = !isPlaying;
-    if (btn) btn.textContent = isPlaying ? "Pause" : "Play";
-    var np = document.querySelector(".now-playing");
-    if (np) np.textContent = isPlaying ? "Now Playing: " + currentTrack : "Paused";
-  };
-  window.stopMusic = function() { isPlaying = false; var btn = document.getElementById("playBtn"); if (btn) btn.textContent = "Play"; };
-  window.selectTrack = function(track) { currentTrack = track; isPlaying = true; };
-
-  // ==================== QUESTION ====================
-  window.askQuestion = function() {
-    var q = document.getElementById("questionInput").value.trim();
-    if (!q) return;
-    var answers = ["Great question! Try breaking it down step by step.", "Check Khan Academy for detailed explanations.", "Focus on the core concept and practice with examples.", "Master the basics first, then tackle advanced problems."];
-    var el = document.getElementById("questionAnswer");
-    if (el) el.innerHTML = "<strong>Answer:</strong> " + answers[Math.floor(Math.random() * answers.length)];
-    document.getElementById("questionInput").value = "";
-  };
-
-  // ==================== AI TUTOR ====================
-  var currentAISubject = "general";
-  var aiKnowledgeBase = {
-    general: { suggestions: ["How can I improve my study habits?", "What are effective note-taking methods?", "How do I stay focused while studying?", "Tips for better time management?"] },
-    math: { suggestions: ["What is 15% of 200?", "What is 25 * 4?", "What is the area of a circle with radius 5?", "What is the Pythagorean theorem?", "What is 144 / 12?"] },
-    science: { suggestions: ["How does photosynthesis work?", "What is DNA?", "Explain Newton's laws", "What is the periodic table?", "How does the immune system work?"] },
-    history: { suggestions: ["When was WWI?", "When was WWII?", "What caused the French Revolution?", "Who was MLK?", "What was the Renaissance?"] },
-    language: { suggestions: ["What are the 8 parts of speech?", "Active vs passive voice?", "Common grammar mistakes?", "How to write an essay?", "Tips for learning a language?"] },
-    coding: { suggestions: ["What is OOP?", "What is an API?", "Frontend vs Backend?", "What is HTML?", "What is JavaScript?"] }
-  };
-
-  function getAIResponse(question) {
-    var q = question.toLowerCase().trim();
-
-    var wordMatch = q.match(/what\s+is\s+(\d+)\s*(plus|add|\+|minus|subtract|\-|times|multiply|\*|x|divided\s+by|over|\/)\s*(\d+)/i);
-    if (wordMatch) {
-      var a = parseInt(wordMatch[1]), op = wordMatch[2].toLowerCase(), b = parseInt(wordMatch[3]), result;
-      if (op === 'plus' || op === 'add' || op === '+') result = a + b;
-      else if (op === 'minus' || op === 'subtract' || op === '-') result = a - b;
-      else if (op === 'times' || op === 'multiply' || op === '*' || op === 'x') result = a * b;
-      else if (op === 'divided by' || op === 'over' || op === '/') result = b !== 0 ? a / b : 'undefined';
-      return a + " " + (op === 'plus' || op === 'add' || op === '+' ? '+' : op === 'minus' || op === 'subtract' || op === '-' ? '-' : op === 'divided by' || op === 'over' || op === '/' ? '/' : 'x') + " " + b + " = " + result;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avro Learn</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .agreement-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
     }
 
-    var directAnswers = {
-      "capital of france": "Paris is the capital of France.",
-      "largest planet": "Jupiter is the largest planet - 318 times more massive than Earth!",
-      "speed of light": "The speed of light is 299,792,458 m/s (about 300,000 km/s).",
-      "what is pi": "Pi = 3.14159...",
-      "how many continents": "There are 7 continents.",
-      "how old is earth": "Earth is about 4.54 billion years old.",
-      "meaning of life": "42! Just kidding."
-    };
-    for (var key in directAnswers) { if (q.includes(key)) return directAnswers[key]; }
+    .agreement-modal.active {
+      display: flex;
+    }
 
-    if (q.includes("photosynthesis")) return "Photosynthesis: 6CO2 + 6H2O + Light -> C6H12O6 + 6O2";
-    if (q.includes("dna")) return "DNA = Deoxyribonucleic Acid. Double helix structure.";
-    if (q.includes("pythagorean")) return "Pythagorean Theorem: a^2 + b^2 = c^2";
-    if (q.includes("api")) return "API = Application Programming Interface.";
-    if (q === "hello" || q === "hi") return "Hello! Ask me anything!";
-    if (q.includes("thank")) return "You're welcome!";
-    return "Can you ask it differently? Try math, science, or coding questions!";
-  }
+    .agreement-modal-content {
+      background-color: white;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 500px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      animation: slideUp 0.3s ease-out;
+    }
 
-  window.setAISubject = function(subject, element) {
-    currentAISubject = subject;
-    document.querySelectorAll(".subject-chip").forEach(function(c) { c.classList.remove("active"); });
-    if (element) element.classList.add("active");
-    updateAISuggestions();
-  };
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
 
-  function updateAISuggestions() {
-    var list = document.getElementById("aiSuggestionsList");
-    if (!list) return;
-    var s = aiKnowledgeBase[currentAISubject] ? aiKnowledgeBase[currentAISubject].suggestions : aiKnowledgeBase.general.suggestions;
-    list.innerHTML = s.map(function(sug) { return '<div class="suggestion-chip" onclick="askAITutorPrompt(\'' + sug.replace(/'/g, "\\'") + '\')">' + sug + '</div>'; }).join("");
-  }
+    .agreement-modal-content h2 {
+      color: #1e293b;
+      margin-bottom: 15px;
+      font-size: 1.5rem;
+    }
 
-  window.askAITutorPrompt = function(p) { askAITutorInternal(p); };
-  window.askAITutor = function() { var i = document.getElementById("aiQuestionInput"); if (!i) return; var q = i.value.trim(); if (!q) return; i.value = ""; askAITutorInternal(q); };
+    .agreement-modal-content p {
+      color: #64748b;
+      margin-bottom: 25px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
 
-  function askAITutorInternal(question) {
-    addAIMessage(question, true);
-    var ind = document.getElementById("aiTypingIndicator"); if (ind) ind.classList.remove("hidden");
-    setTimeout(function() { if (ind) ind.classList.add("hidden"); addAIMessage(getAIResponse(question), false); }, 800 + Math.random() * 700);
-  }
+    .agreement-modal-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
 
-  function addAIMessage(msg, isUser) {
-    var chat = document.getElementById("aiChatMessages"); if (!chat) return;
-    var div = document.createElement("div");
-    div.className = "ai-message " + (isUser ? "ai-message-user" : "ai-message-bot");
-    div.innerHTML = '<div class="ai-avatar">' + (isUser ? "You" : "AI") + '</div><div class="ai-bubble">' + msg.replace(/\n/g, '<br>') + '</div>';
-    chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
-  }
+    .agreement-btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
 
-  window.explainConcept = function() { var i = document.getElementById("aiQuestionInput"); if (i) { i.value = "Explain: "; i.focus(); } };
-  window.generateQuiz = function() { addAIMessage("Quiz: What is 15% of 200? Answer: 30", false); };
-  window.summarizeNotes = function() { var n = JSON.parse(localStorage.getItem("notes") || "[]"); addAIMessage(n.length === 0 ? "No notes yet!" : "You have " + n.length + " notes.", false); };
-  window.studyTips = function() { addAIMessage("Tips: 1. Active Recall 2. Pomodoro 3. Spaced Repetition 4. Teach others 5. Sleep!", false); };
+    .agree-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      flex: 1;
+      max-width: 150px;
+    }
 
-  // ==================== STUDY PARTNERS ====================
-  var currentRoomCode = null, currentUser = "You", currentUserId = "user-" + Math.random().toString(36).substring(2, 8);
-  var roomRef = null, whiteboardRef = null, chatRef = null;
+    .agree-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
 
-  window.createStudyRoom = function() {
-    if (!firebaseReady) return alert("Firebase not connected!");
-    var name = document.getElementById("roomNameInput").value.trim();
-    if (!name) return alert("Enter a room name!");
-    currentRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase(); currentUser = "Host";
-    roomRef = db.ref("rooms/" + currentRoomCode);
-    roomRef.set({ name: name, participants: {} });
-    roomRef.child("participants").child(currentUserId).set({ name: currentUser });
-    document.getElementById("createdRoomInfo").classList.remove("hidden");
-    document.getElementById("roomCodeDisplay").textContent = currentRoomCode;
-    enterStudyRoom(name);
-  };
+    .agree-btn:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <!-- Agreement Modal -->
+  <div class="agreement-modal" id="agreementModal">
+    <div class="agreement-modal-content">
+      <h2>⚠️ Important Notice</h2>
+      <p>This site does not use a real database. Please save your account via local storage before proceeding.</p>
+      <div class="agreement-modal-buttons">
+        <button class="agreement-btn agree-btn" onclick="agreeAndContinue()">I Agree</button>
+      </div>
+    </div>
+  </div>
 
-  window.joinStudyRoom = function() {
-    if (!firebaseReady) return alert("Firebase not connected!");
-    var code = document.getElementById("joinRoomCode").value.trim().toUpperCase();
-    if (!code) return;
-    db.ref("rooms/" + code).once("value", function(snap) {
-      if (snap.exists()) {
-        currentRoomCode = code; currentUser = "Partner"; roomRef = db.ref("rooms/" + code);
-        roomRef.child("participants").child(currentUserId).set({ name: currentUser });
-        document.getElementById("joinError").classList.add("hidden");
-        enterStudyRoom(snap.val().name);
-      } else { document.getElementById("joinError").classList.remove("hidden"); }
-    });
-  };
+  <!-- LANDING PAGE -->
+  <div id="landingPage">
+    <div class="space-background">
+      <div class="stars"></div>
+      <div class="stars2"></div>
+      <div class="stars3"></div>
+      <div class="moon"></div>
+      <div class="planet planet-1"></div>
+      <div class="planet planet-2"></div>
+      <div class="shooting-star"></div>
+      <div class="shooting-star-2"></div>
+    </div>
+    
+    <div class="landing-content">
+      <div class="top-bar">
+        <div class="logo-small">
+          <span class="logo-text-small">Milo</span>
+        </div>
+        <button class="login-btn-top" onclick="openLogin()">Log In</button>
+      </div>
 
-  function enterStudyRoom(name) {
-    document.getElementById("partnerLobby").classList.add("hidden");
-    document.getElementById("studyRoom").classList.remove("hidden");
-    document.getElementById("roomTitle").textContent = name;
-    document.getElementById("activeRoomCode").textContent = currentRoomCode;
-    roomRef.child("participants").on("value", function(snap) {
-      var p = snap.val() || {}, html = "";
-      for (var id in p) { html += '<li class="participant ' + (id === currentUserId ? 'you' : 'partner') + '">' + p[id].name + '</li>'; }
-      document.getElementById("participantsList").innerHTML = html;
-    });
-  }
+      <div class="hero-section">
+        <h1 class="hero-title">Welcome to <span class="highlight">Milo</span></h1>
+        <p class="hero-subtitle">Your magical journey to knowledge begins here! ✨</p>
+        
+        <div class="blobs-container">
+          <div class="blob blob-1"></div>
+          <div class="blob blob-2"></div>
+          <div class="blob blob-3"></div>
+          <div class="blob blob-4"></div>
+          <div class="blob blob-5"></div>
+        </div>
 
-  window.leaveStudyRoom = function() {
-    document.getElementById("partnerLobby").classList.remove("hidden");
-    document.getElementById("studyRoom").classList.add("hidden");
-    currentRoomCode = null;
-  };
+        <div class="floating-elements">
+          <span class="float-item float-book">📚</span>
+          <span class="float-item float-pencil">✏️</span>
+          <span class="float-item float-star">⭐</span>
+          <span class="float-item float-bulb">💡</span>
+          <span class="float-item float-rocket">🚀</span>
+          <span class="float-item float-rainbow">🌈</span>
+        </div>
 
-  window.syncWhiteboard = function() { document.getElementById("syncStatus").textContent = "Synced!"; setTimeout(function() { document.getElementById("syncStatus").textContent = ""; }, 2000); };
-  window.sendChat = function() {
-    var input = document.getElementById("chatInput"), text = input.value.trim();
-    if (!text) return; input.value = "";
-    var chatDiv = document.getElementById("chatMessages");
-    chatDiv.innerHTML += '<div class="chat-message mine"><strong>' + currentUser + ':</strong> ' + text + '</div>';
-    chatDiv.scrollTop = chatDiv.scrollHeight;
-  };
-  window.copyRoomCode = function() { if (currentRoomCode) navigator.clipboard.writeText(currentRoomCode).then(function() { alert("Copied!"); }); };
+        <div class="hero-description">
+          <p class="desc-main">🌟 This is a <strong>wonderful learning app</strong> designed to make studying fun and engaging!</p>
+          <p class="desc-detail">🎯 Track your work, take quizzes, use flashcards, study with AI tutor, and learn with friends!</p>
+          <div class="feature-badges">
+            <span class="badge">📝 Notes</span>
+            <span class="badge">⏰ Pomodoro</span>
+            <span class="badge">🧠 Quizzes</span>
+            <span class="badge">🤖 AI Tutor</span>
+            <span class="badge">👥 Study Partners</span>
+            <span class="badge">🎵 Study Music</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  window.startSharedPomodoro = function() {};
-  window.pauseSharedPomodoro = function() {};
-  window.resetSharedPomodoro = function() {};
-  window.loadSharedQuiz = function() {};
-  window.checkSharedAnswer = function() {};
-})();
+  <!-- LOGIN SCREEN -->
+  <div class="container hidden" id="loginScreen">
+    <div class="login-header">
+      <button class="back-btn" onclick="goToLanding()">← Back</button>
+      <div class="login-logo">
+        <svg viewBox="0 0 60 60" class="login-svg">
+          <circle cx="30" cy="30" r="28" class="login-circle" />
+          <path d="M18 30 L27 38 L42 22" class="login-check" />
+        </svg>
+      </div>
+      <h1 class="title">Avro Learn</h1>
+      <p class="subtitle">Sign in to continue your journey</p>
+    </div>
+
+    <form id="loginForm" autocomplete="off">
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password" />
+      </div>
+      <div class="login-options">
+        <label class="remember-me">
+          <input type="checkbox" id="remember" />
+          <span>Remember me</span>
+        </label>
+        <a href="#" class="forgot-password">Forgot password?</a>
+      </div>
+      <button type="submit" class="login-btn">Sign In</button>
+    </form>
+
+    <p id="message"></p>
+    
+    <p class="signup-prompt">
+      Don't have an account? <a href="#">Sign up</a>
+    </p>
+  </div>
+
+  <!-- CUTE LOADING SCREEN -->
+  <div class="loading-screen hidden" id="loadingScreen">
+    <div class="cute-loading-bg">
+      <div class="floating-hearts">
+        <span class="heart">💕</span>
+        <span class="heart">💖</span>
+        <span class="heart">💗</span>
+        <span class="heart">💝</span>
+        <span class="heart">💫</span>
+        <span class="heart">✨</span>
+        <span class="heart">🌟</span>
+        <span class="heart">💖</span>
+      </div>
+      <div class="cute-animals-loading">
+        <span class="load-animal">🐱</span>
+        <span class="load-animal">🐶</span>
+        <span class="load-animal">🐰</span>
+        <span class="load-animal">🦊</span>
+        <span class="load-animal">🐼</span>
+      </div>
+    </div>
+    <div class="loading-content">
+      <div class="logo-container">
+        <div class="logo-icon">
+          <svg viewBox="0 0 60 60" class="logo-svg">
+            <circle cx="30" cy="30" r="28" class="logo-circle" />
+            <path d="M18 30 L27 38 L42 22" class="logo-check" />
+          </svg>
+        </div>
+        <h1 class="loading-title">Milo</h1>
+      </div>
+      <div class="spinner-container">
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring spinner-ring-2"></div>
+        <div class="spinner-core"></div>
+      </div>
+      <p class="loading-text" id="loadingMessage">Preparing your dashboard...</p>
+      <div class="loading-progress">
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div class="container hidden app-layout" id="appScreen">
+    <header>
+      <h1>Dashboard</h1>
+      <p id="welcomeUser" class="welcome-user"></p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab(event, 'dashboard')">Dashboard</button>
+      <button class="tab" onclick="showTab(event, 'workTracker')">Work Tracker</button>
+      <button class="tab" onclick="showTab(event, 'quizzes')">Quizzes</button>
+      <button class="tab" onclick="showTab(event, 'calculator')">Calculator</button>
+      <button class="tab" onclick="showTab(event, 'pomodoro')">Pomodoro</button>
+      <button class="tab" onclick="showTab(event, 'flashcards')">Flashcards</button>
+      <button class="tab" onclick="showTab(event, 'notes')">Notes</button>
+      <button class="tab" onclick="showTab(event, 'aiTutor')">AI Tutor</button>
+      <button class="tab" onclick="showTab(event, 'tools')">Discover Tools</button>
+      <button class="tab" onclick="showTab(event, 'music')">Study Music</button>
+      <button class="tab" onclick="showTab(event, 'partners')">Study Partners</button>
+      <button class="tab" onclick="showTab(event, 'question')">Ask a Question</button>
+    </div>
+
+    <div class="tab-content active" id="dashboard">
+      <h2>Your Learning Dashboard</h2>
+      <div class="stats-grid">
+        <div class="stat-card"><h3>Notes</h3><p id="notesCount">0</p></div>
+        <div class="stat-card"><h3>Study Hours</h3><p id="studyHours">0</p></div>
+        <div class="stat-card"><h3>Tasks Done</h3><p id="tasksDone">0</p></div>
+        <div class="stat-card"><h3>Flashcards</h3><p id="flashcardCount">0</p></div>
+      </div>
+      <div class="quick-actions">
+        <button onclick="showTab(event, 'pomodoro')">Start Pomodoro</button>
+        <button onclick="showTab(event, 'quizzes')">Take a Quiz</button>
+        <button onclick="showTab(event, 'notes')">Write Notes</button>
+        <button onclick="showTab(event, 'aiTutor')">Ask AI Tutor</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="workTracker">
+      <h2>Work Tracker</h2>
+      <div class="input-row">
+        <input type="text" id="workInput" placeholder="Add a task..." />
+        <input type="date" id="workDeadline" />
+        <button onclick="addWork()">Add Task</button>
+      </div>
+      <div class="filter-row">
+        <button onclick="filterWork(event, 'all')" class="filter-btn active">All</button>
+        <button onclick="filterWork(event, 'pending')" class="filter-btn">Pending</button>
+        <button onclick="filterWork(event, 'done')" class="filter-btn">Done</button>
+      </div>
+      <ul id="workList"></ul>
+    </div>
+
+    <div class="tab-content" id="quizzes">
+      <h2>Quizzes</h2>
+      <div id="quizContainer">
+        <div id="quizQuestion"></div>
+        <div id="quizOptions"></div>
+        <p id="quizResult"></p>
+        <button onclick="loadQuiz()">Next Question</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="calculator">
+      <h2>Calculator</h2>
+      <div class="calculator">
+        <input type="text" id="calcDisplay" readonly placeholder="0" />
+        <div class="calc-buttons">
+          <button class="calc-btn" onclick="appendToCalc('7')">7</button>
+          <button class="calc-btn" onclick="appendToCalc('8')">8</button>
+          <button class="calc-btn" onclick="appendToCalc('9')">9</button>
+          <button class="calc-btn operator" onclick="appendToCalc('/')">/</button>
+          <button class="calc-btn" onclick="appendToCalc('4')">4</button>
+          <button class="calc-btn" onclick="appendToCalc('5')">5</button>
+          <button class="calc-btn" onclick="appendToCalc('6')">6</button>
+          <button class="calc-btn operator" onclick="appendToCalc('*')">*</button>
+          <button class="calc-btn" onclick="appendToCalc('1')">1</button>
+          <button class="calc-btn" onclick="appendToCalc('2')">2</button>
+          <button class="calc-btn" onclick="appendToCalc('3')">3</button>
+          <button class="calc-btn operator" onclick="appendToCalc('-')">-</button>
+          <button class="calc-btn" onclick="appendToCalc('0')">0</button>
+          <button class="calc-btn" onclick="appendToCalc('.')">.</button>
+          <button class="calc-btn equals" onclick="calculate()">=</button>
+          <button class="calc-btn operator" onclick="appendToCalc('+')">+</button>
+          <button class="calc-btn clear" onclick="clearCalc()">C</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="pomodoro">
+      <h2>Pomodoro Timer</h2>
+      <div class="timer-display" id="timerDisplay">25:00</div>
+      <div class="timer-controls">
+        <button onclick="startPomodoro()">Start</button>
+        <button onclick="pausePomodoro()">Pause</button>
+        <button onclick="resetPomodoro()">Reset</button>
+      </div>
+      <div class="timer-presets">
+        <button onclick="setPomodoro(45)">45 min</button>
+        <button onclick="setPomodoro(25)">25 min</button> 
+        <button onclick="setPomodoro(15)">15 min</button>
+        <button onclick="setPomodoro(5)">5 min</button>
+      </div>
+      <p id="pomodoroStatus"></p>
+    </div>
+
+    <div class="tab-content" id="flashcards">
+      <h2>Flashcards</h2>
+      <div class="input-row">
+        <input type="text" id="flashcardQuestion" placeholder="Question" />
+        <input type="text" id="flashcardAnswer" placeholder="Answer" />
+        <button onclick="addFlashcard()">Add Card</button>
+      </div>
+      <div id="flashcardDeck"></div>
+      <div class="flashcard-viewer hidden" id="flashcardViewer">
+        <div class="flashcard" id="currentFlashcard" onclick="flipFlashcard()">
+          <span id="flashcardText">Click to flip</span>
+        </div>
+        <button onclick="nextFlashcard()">Next Card</button>
+      </div>
+      <button onclick="studyFlashcards()">Study Deck</button>
+    </div>
+
+    <div class="tab-content" id="notes">
+      <h2>Notes</h2>
+      <input type="text" id="noteTitle" placeholder="Note title..." />
+      <textarea id="noteContent" placeholder="Write your notes here..."></textarea>
+      <button onclick="saveNote()">Save Note</button>
+      <div id="notesList"></div>
+    </div>
+
+    <div class="tab-content" id="aiTutor">
+      <h2>AI Learning Tutor</h2>
+      <p class="ai-subtitle">Your personal AI teacher — ask anything, learn everything</p>
+      
+      <div class="ai-tutor-container">
+        <div class="ai-subject-selector">
+          <h3>Select Subject</h3>
+          <div class="subject-chips">
+            <button class="subject-chip active" onclick="setAISubject('general', this)">General</button>
+            <button class="subject-chip" onclick="setAISubject('math', this)">Math</button>
+            <button class="subject-chip" onclick="setAISubject('science', this)">Science</button>
+            <button class="subject-chip" onclick="setAISubject('history', this)">History</button>
+            <button class="subject-chip" onclick="setAISubject('language', this)">Language</button>
+            <button class="subject-chip" onclick="setAISubject('coding', this)">Coding</button>
+          </div>
+        </div>
+
+        <div class="ai-suggestions">
+          <h3>Suggested Questions</h3>
+          <div id="aiSuggestionsList" class="suggestions-list"></div>
+        </div>
+
+        <div class="ai-chat-area">
+          <div class="ai-chat-messages" id="aiChatMessages">
+            <div class="ai-message ai-message-bot">
+              <div class="ai-avatar">AI</div>
+              <div class="ai-bubble">
+                <p>Hello! I'm your AI tutor. I can help you learn any subject. Try asking me:</p>
+                <ul>
+                  <li>"Explain photosynthesis in simple terms"</li>
+                  <li>"How do I solve quadratic equations?"</li>
+                  <li>"What caused World War II?"</li>
+                  <li>"Help me understand JavaScript loops"</li>
+                </ul>
+                <p>What would you like to learn today?</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="ai-typing-indicator hidden" id="aiTypingIndicator">
+            <div class="ai-avatar">AI</div>
+            <div class="ai-bubble typing-bubble">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+
+          <div class="ai-input-row">
+            <textarea id="aiQuestionInput" placeholder="Ask your AI tutor anything..." rows="2"></textarea>
+            <button onclick="askAITutor()" id="aiSendBtn">Ask</button>
+          </div>
+          
+          <div class="ai-actions">
+            <button onclick="explainConcept()" class="ai-action-btn">Explain a Concept</button>
+            <button onclick="generateQuiz()" class="ai-action-btn">Generate Quiz</button>
+            <button onclick="summarizeNotes()" class="ai-action-btn">Summarize My Notes</button>
+            <button onclick="studyTips()" class="ai-action-btn">Study Tips</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tools">
+      <h2>Discover Learning Tools</h2>
+      <div class="tools-grid">
+        <div class="tool-card"><h3>Khan Academy</h3><p>Free courses on all subjects</p></div>
+        <div class="tool-card"><h3>Coursera</h3><p>University-level courses</p></div>
+        <div class="tool-card"><h3>freeCodeCamp</h3><p>Learn coding for free</p></div>
+        <div class="tool-card"><h3>Quizlet</h3><p>Study with flashcards</p></div>
+        <div class="tool-card"><h3>Duolingo</h3><p>Learn languages</p></div>
+        <div class="tool-card"><h3>Brilliant</h3><p>Math & science learning</p></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="music">
+      <h2>Study Music</h2>
+      <div class="music-player">
+        <p class="now-playing">Now Playing: Lo-fi Beats</p>
+        <div class="music-controls">
+          <button onclick="toggleMusic()" id="playBtn">Play</button>
+          <button onclick="stopMusic()">Stop</button>
+        </div>
+        <div class="playlist">
+          <p onclick="selectTrack('Lo-fi Beats')">Lo-fi Beats</p>
+          <p onclick="selectTrack('Classical Piano')">Classical Piano</p>
+          <p onclick="selectTrack('Nature Sounds')">Nature Sounds</p>
+          <p onclick="selectTrack('Jazz Study')">Jazz Study</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="partners">
+      <h2>Study Partners</h2>
+      <p id="firebaseStatus" style="text-align:center;color:#64748b;font-size:12px;margin-bottom:8px;"></p>
+      
+      <div id="partnerLobby">
+        <h3>Start a Study Session</h3>
+        <p>Create a study room and share the code with a friend on any device!</p>
+        
+        <div class="study-room-actions">
+          <div class="room-card">
+            <h4>Create a Study Room</h4>
+            <p>Generate a room code and share it with your friend</p>
+            <input type="text" id="roomNameInput" placeholder="Room name (e.g., Math Study)" />
+            <button onclick="createStudyRoom()">Create Room</button>
+            <div id="createdRoomInfo" class="hidden">
+              <p class="room-code-display">Room Code: <strong id="roomCodeDisplay"></strong></p>
+              <p class="copy-hint">Share this code with your friend</p>
+              <button onclick="copyRoomCode()">Copy Room Code</button>
+            </div>
+          </div>
+          
+          <div class="room-card">
+            <h4>Join a Study Room</h4>
+            <p>Enter the room code your friend shared with you</p>
+            <input type="text" id="joinRoomCode" placeholder="Enter room code..." />
+            <button onclick="joinStudyRoom()">Join Room</button>
+            <p id="joinError" class="error-msg hidden">Room not found. Check the code and try again.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="studyRoom" class="hidden">
+        <div class="room-header">
+          <h3 id="roomTitle"></h3>
+          <p>Room Code: <strong id="activeRoomCode"></strong></p>
+          <button onclick="leaveStudyRoom()" class="leave-btn">Leave Room</button>
+        </div>
+        
+        <div class="room-content">
+          <div class="participants-panel">
+            <h4>Participants</h4>
+            <ul id="participantsList">
+              <li class="participant you">You (Host)</li>
+            </ul>
+          </div>
+          
+          <div class="collaboration-area">
+            <h4>Shared Whiteboard</h4>
+            <textarea id="sharedWhiteboard" placeholder="Write notes here that your study partner can see..."></textarea>
+            <button onclick="syncWhiteboard()">Sync with Partner</button>
+            <p id="syncStatus"></p>
+          </div>
+          
+          <div class="chat-area">
+            <h4>Study Chat</h4>
+            <div id="chatMessages"></div>
+            <div class="chat-input-row">
+              <input type="text" id="chatInput" placeholder="Type a message..." />
+              <button onclick="sendChat()">Send</button>
+            </div>
+          </div>
+          
+          <div class="shared-timer">
+            <h4>Shared Pomodoro Timer</h4>
+            <div class="timer-display" id="sharedTimerDisplay">25:00</div>
+            <div class="timer-controls">
+              <button onclick="startSharedPomodoro()">Start Together</button>
+              <button onclick="pauseSharedPomodoro()">Pause</button>
+              <button onclick="resetSharedPomodoro()">Reset</button>
+            </div>
+            <p id="sharedTimerStatus"></p>
+          </div>
+
+          <div class="shared-quiz">
+            <h4>Quiz Together</h4>
+            <div id="sharedQuizQuestion"></div>
+            <div id="sharedQuizOptions"></div>
+            <p id="sharedQuizResult"></p>
+            <button onclick="loadSharedQuiz()">Next Question</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="question">
+      <h2>Ask a Question</h2>
+      <textarea id="questionInput" placeholder="Type your question here..."></textarea>
+      <button onclick="askQuestion()">Ask</button>
+      <div id="questionAnswer"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const landingPage = document.getElementById("landingPage");
+      const form = document.getElementById("loginForm");
+      const loadingScreen = document.getElementById("loadingScreen");
+      const loginScreen = document.getElementById("loginScreen");
+      const appScreen = document.getElementById("appScreen");
+      const welcomeUser = document.getElementById("welcomeUser");
+      const message = document.getElementById("message");
+      const agreementModal = document.getElementById("agreementModal");
+      
+      let agreementAccepted = false;
+
+      window.agreeAndContinue = function() {
+        agreementAccepted = true;
+        agreementModal.classList.remove("active");
+      };
+
+      // Show agreement on link navigation
+      document.addEventListener("click", function(e) {
+        if (e.target.tagName === "A" && e.target.href && !agreementAccepted) {
+          e.preventDefault();
+          agreementModal.classList.add("active");
+          const targetUrl = e.target.href;
+          window.currentTargetUrl = targetUrl;
+        }
+      });
+
+      window.openLogin = function () {
+        landingPage.style.display = "none";
+        loginScreen.classList.remove("hidden");
+      };
+
+      window.goToLanding = function () {
+        landingPage.style.display = "flex";
+        loginScreen.classList.add("hidden");
+        appScreen.classList.add("hidden");
+      };
+
+      window.showTab = function (event, tabName) {
+        document.querySelectorAll(".tab-content").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+        document.getElementById(tabName).classList.add("active");
+        if (event && event.target) event.target.classList.add("active");
+      };
+
+      const firebaseStatus = document.getElementById("firebaseStatus");
+      if (firebaseStatus) firebaseStatus.textContent = "Offline mode in OneCompiler";
+
+      function showLoadingSequence(email) {
+        const loadingMessage = document.getElementById("loadingMessage");
+        const steps = [
+          "Preparing your dashboard... 🎨",
+          "Loading your personal stats... 📊",
+          "Setting up your AI tutor... 🤖",
+          "Syncing study materials... 📚",
+          "Almost ready... ✨"
+        ];
+        let i = 0;
+        const timer = setInterval(() => {
+          if (loadingMessage) loadingMessage.textContent = steps[i];
+          i++;
+          if (i >= steps.length) {
+            clearInterval(timer);
+            setTimeout(() => {
+              loadingScreen.classList.add("hidden");
+              appScreen.classList.remove("hidden");
+              welcomeUser.textContent = "Welcome back, " + email + "!";
+              updateDashboardStats();
+              renderNotes();
+              renderFlashcardDeck();
+              updateAISuggestions();
+            }, 700);
+          }
+        }, 250);
+      }
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+
+        if (!email || !email.includes("@")) {
+          message.textContent = "Please enter a valid email address.";
+          return;
+        }
+        if (!password) {
+          message.textContent = "Please enter your password.";
+          return;
+        }
+
+        message.textContent = "";
+        loginScreen.classList.add("hidden");
+        loadingScreen.classList.remove("hidden");
+        showLoadingSequence(email);
+      });
+
+      function updateDashboardStats() {
+        document.getElementById("notesCount").textContent = JSON.parse(localStorage.getItem("notes") || "[]").length;
+        document.getElementById("studyHours").textContent = "8";
+        document.getElementById("tasksDone").textContent = document.querySelectorAll("#workList li.done").length;
+        document.getElementById("flashcardCount").textContent = JSON.parse(localStorage.getItem("flashcards") || "[]").length;
+      }
+      window.updateDashboardStats = updateDashboardStats;
+
+      window.addWork = function () {
+        const task = document.getElementById("workInput").value.trim();
+        const deadline = document.getElementById("workDeadline").value;
+        if (!task) return;
+        const li = document.createElement("li");
+        li.innerHTML = "<span>" + task + (deadline ? " - " + deadline : "") + '</span><div style="display:flex;gap:8px;"><button onclick="toggleWorkDone(this)">Done</button><button onclick="deleteWork(this)">Delete</button></div>';
+        li.dataset.status = "pending";
+        document.getElementById("workList").appendChild(li);
+        document.getElementById("workInput").value = "";
+        document.getElementById("workDeadline").value = "";
+        updateDashboardStats();
+      };
+
+      window.toggleWorkDone = function (btn) {
+        btn.closest("li").classList.toggle("done");
+        updateDashboardStats();
+      };
+
+      window.deleteWork = function (btn) {
+        btn.closest("li").remove();
+        updateDashboardStats();
+      };
+
+      window.filterWork = function (event, filter) {
+        document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        if (event && event.target) event.target.classList.add("active");
+        document.querySelectorAll("#workList li").forEach((li) => {
+          if (filter === "all") li.style.display = "flex";
+          else if (filter === "done") li.style.display = li.classList.contains("done") ? "flex" : "none";
+          else li.style.display = !li.classList.contains("done") ? "flex" : "none";
+        });
+      };
+
+      const quizQuestions = [
+        { q: "What is the capital of France?", options: ["London", "Paris", "Berlin", "Madrid"], answer: 1 },
+        { q: "What is 5 + 3?", options: ["6", "7", "8", "9"], answer: 2 },
+        { q: "Which planet is closest to the Sun?", options: ["Venus", "Mars", "Mercury", "Earth"], answer: 2 },
+        { q: "What is H2O?", options: ["Oxygen", "Water", "Hydrogen", "Salt"], answer: 1 },
+        { q: "Who wrote Romeo and Juliet?", options: ["Dickens", "Shakespeare", "Austen", "Hemingway"], answer: 1 }
+      ];
+
+      window.loadQuiz = function () {
+        const q = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
+        document.getElementById("quizQuestion").innerHTML = "<h3 style='color:#1e293b;'>" + q.q + "</h3>";
+        document.getElementById("quizOptions").innerHTML = q.options.map((opt, i) => {
+          return '<button onclick="checkAnswer(' + i + ", " + q.answer + ')" style="width:auto;display:inline-block;margin:5px;">' + opt + "</button>";
+        }).join("");
+        document.getElementById("quizResult").textContent = "";
+      };
+
+      window.checkAnswer = function (selected, correct) {
+        const result = document.getElementById("quizResult");
+        result.textContent = selected === correct ? "Correct!" : "Wrong answer. Try again!";
+        result.style.color = selected === correct ? "#4caf50" : "#f44336";
+      };
+
+      window.appendToCalc = function (value) {
+        document.getElementById("calcDisplay").value += value;
+      };
+      window.clearCalc = function () {
+        document.getElementById("calcDisplay").value = "";
+      };
+      window.calculate = function () {
+        const d = document.getElementById("calcDisplay");
+        try { d.value = eval(d.value); } catch (e) { d.value = "Error"; }
+      };
+
+      let pomodoroTimer, pomodoroSeconds = 1500, pomodoroRunning = false;
+      function updateTimerDisplay() {
+        const d = document.getElementById("timerDisplay");
+        const m = Math.floor(pomodoroSeconds / 60);
+        const s = pomodoroSeconds % 60;
+        d.textContent = m + ":" + s.toString().padStart(2, "0");
+      }
+      window.setPomodoro = function (minutes) { window.pausePomodoro(); pomodoroSeconds = minutes * 60; updateTimerDisplay(); };
+      window.startPomodoro = function () {
+        if (pomodoroRunning) return;
+        pomodoroRunning = true;
+        pomodoroTimer = setInterval(() => {
+          if (pomodoroSeconds > 0) {
+            pomodoroSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(pomodoroTimer);
+            pomodoroRunning = false;
+          }
+        }, 1000);
+      };
+      window.pausePomodoro = function () { clearInterval(pomodoroTimer); pomodoroRunning = false; };
+      window.resetPomodoro = function () { window.pausePomodoro(); pomodoroSeconds = 1500; updateTimerDisplay(); };
+      updateTimerDisplay();
+
+      let flashcards = JSON.parse(localStorage.getItem("flashcards") || "[]");
+      let flashcardIndex = 0, isFlipped = false;
+
+      window.addFlashcard = function () {
+        const q = document.getElementById("flashcardQuestion").value.trim();
+        const a = document.getElementById("flashcardAnswer").value.trim();
+        if (!q || !a) return;
+        flashcards.push({ q, a });
+        localStorage.setItem("flashcards", JSON.stringify(flashcards));
+        renderFlashcardDeck();
+        document.getElementById("flashcardQuestion").value = "";
+        document.getElementById("flashcardAnswer").value = "";
+        updateDashboardStats();
+      };
+
+      function renderFlashcardDeck() {
+        document.getElementById("flashcardDeck").innerHTML = flashcards.map((card, i) =>
+          '<div class="mini-card" onclick="removeFlashcard(' + i + ')">' + card.q + " X</div>"
+        ).join("");
+      }
+      window.renderFlashcardDeck = renderFlashcardDeck;
+
+      window.studyFlashcards = function () {
+        if (flashcards.length === 0) return alert("Add some flashcards first!");
+        flashcardIndex = 0;
+        isFlipped = false;
+        document.getElementById("flashcardViewer").classList.remove("hidden");
+        showFlashcard();
+      };
+
+      function showFlashcard() {
+        if (flashcardIndex >= flashcards.length) {
+          document.getElementById("flashcardViewer").classList.add("hidden");
+          return;
+        }
+        isFlipped = false;
+        document.getElementById("flashcardText").textContent = flashcards[flashcardIndex].q;
+      }
+
+      window.flipFlashcard = function () {
+        isFlipped = !isFlipped;
+        document.getElementById("flashcardText").textContent = isFlipped ? flashcards[flashcardIndex].a : flashcards[flashcardIndex].q;
+      };
+      window.nextFlashcard = function () { flashcardIndex++; showFlashcard(); };
+      window.removeFlashcard = function (index) {
+        flashcards.splice(index, 1);
+        localStorage.setItem("flashcards", JSON.stringify(flashcards));
+        renderFlashcardDeck();
+        updateDashboardStats();
+      };
+
+      window.saveNote = function () {
+        const title = document.getElementById("noteTitle").value.trim();
+        const content = document.getElementById("noteContent").value.trim();
+        if (!title || !content) return;
+        const notes = JSON.parse(localStorage.getItem("notes") || "[]");
+        notes.push({ title, content, date: new Date().toLocaleString() });
+        localStorage.setItem("notes", JSON.stringify(notes));
+        renderNotes();
+        document.getElementById("noteTitle").value = "";
+        document.getElementById("noteContent").value = "";
+        updateDashboardStats();
+      };
+
+      function renderNotes() {
+        const list = document.getElementById("notesList");
+        const notes = JSON.parse(localStorage.getItem("notes") || "[]");
+        list.innerHTML = notes.map((note, i) => {
+          return '<div class="note-item"><div><strong>' + note.title + '</strong><br><small>' + note.date + '</small><br>' + note.content.substring(0, 50) + '...</div><button onclick="deleteNote(' + i + ')">Delete</button></div>';
+        }).join("");
+      }
+      window.renderNotes = renderNotes;
+      window.deleteNote = function (index) {
+        const notes = JSON.parse(localStorage.getItem("notes") || "[]");
+        notes.splice(index, 1);
+        localStorage.setItem("notes", JSON.stringify(notes));
+        renderNotes();
+        updateDashboardStats();
+      };
+
+      let isPlaying = false, currentTrack = "Lo-fi Beats";
+      window.toggleMusic = function () {
+        const btn = document.getElementById("playBtn");
+        isPlaying = !isPlaying;
+        btn.textContent = isPlaying ? "Pause" : "Play";
+        document.querySelector(".now-playing").textContent = isPlaying ? "Now Playing: " + currentTrack : "Paused";
+      };
+      window.stopMusic = function () { isPlaying = false; document.getElementById("playBtn").textContent = "Play"; };
+      window.selectTrack = function (track) { currentTrack = track; isPlaying = true; document.getElementById("playBtn").textContent = "Pause"; document.querySelector(".now-playing").textContent = "Now Playing: " + currentTrack; };
+
+      window.askQuestion = function () {
+        const q = document.getElementById("questionInput").value.trim();
+        if (!q) return;
+        const answers = [
+          "Great question! Try breaking it down step by step.",
+          "Check Khan Academy for detailed explanations.",
+          "Focus on the core concept and practice with examples.",
+          "Master the basics first, then tackle advanced problems."
+        ];
+        document.getElementById("questionAnswer").innerHTML = "<strong>Answer:</strong> " + answers[Math.floor(Math.random() * answers.length)];
+        document.getElementById("questionInput").value = "";
+      };
+
+      let currentAISubject = "general";
+      const aiKnowledgeBase = {
+        general: { suggestions: ["How can I improve my study habits?", "What are effective note-taking methods?", "How do I stay focused while studying?", "Tips for better time management?"] },
+        math: { suggestions: ["What is 15% of 200?", "What is 25 * 4?", "What is the area of a circle with radius 5?", "What is the Pythagorean theorem?", "What is 144 / 12?"] },
+        science: { suggestions: ["How does photosynthesis work?", "What is DNA?", "Explain Newton's laws", "What is the periodic table?", "How does the immune system work?"] },
+        history: { suggestions: ["When was WWI?", "When was WWII?", "What caused the French Revolution?", "Who was MLK?", "What was the Renaissance?"] },
+        language: { suggestions: ["What are the 8 parts of speech?", "Active vs passive voice?", "Common grammar mistakes?", "How to write an essay?", "Tips for learning a language?"] },
+        coding: { suggestions: ["What is OOP?", "What is an API?", "Frontend vs Backend?", "What is HTML?", "What is JavaScript?"] }
+      };
+
+      function updateAISuggestions() {
+        const list = document.getElementById("aiSuggestionsList");
+        const s = aiKnowledgeBase[currentAISubject].suggestions;
+        list.innerHTML = s.map((sug) =>
+          '<div class="suggestion-chip" onclick="askAITutorPrompt(\'' + sug.replace(/'/g, "\\'") + "')'>" + sug + "</div>"
+        ).join("");
+      }
+      window.updateAISuggestions = updateAISuggestions;
+
+      function getAIResponse(question) {
+        const q = question.toLowerCase();
+        if (q.includes("photosynthesis")) return "Photosynthesis: plants use sunlight, water, and carbon dioxide to make food and oxygen.";
+        if (q.includes("dna")) return "DNA = Deoxyribonucleic Acid. It stores genetic information.";
+        if (q.includes("pythagorean")) return "Pythagorean Theorem: a² + b² = c²";
+        if (q.includes("api")) return "API = Application Programming Interface.";
+        return "Can you ask it differently? Try math, science, or coding questions!";
+      }
+
+      window.setAISubject = function (subject, element) {
+        currentAISubject = subject;
+        document.querySelectorAll(".subject-chip").forEach((c) => c.classList.remove("active"));
+        if (element) element.classList.add("active");
+        updateAISuggestions();
+      };
+
+      window.askAITutorPrompt = function (p) { askAITutorInternal(p); };
+      window.askAITutor = function () {
+        const i = document.getElementById("aiQuestionInput");
+        const q = i.value.trim();
+        if (!q) return;
+        i.value = "";
+        askAITutorInternal(q);
+      };
+
+      function addAIMessage(msg, isUser) {
+        const chat = document.getElementById("aiChatMessages");
+        const div = document.createElement("div");
+        div.className = "ai-message " + (isUser ? "ai-message-user" : "ai-message-bot");
+        div.innerHTML = '<div class="ai-avatar">' + (isUser ? "You" : "AI") + '</div><div class="ai-bubble">' + msg + "</div>";
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      function askAITutorInternal(question) {
+        addAIMessage(question, true);
+        const ind = document.getElementById("aiTypingIndicator");
+        ind.classList.remove("hidden");
+        setTimeout(() => {
+          ind.classList.add("hidden");
+          addAIMessage(getAIResponse(question), false);
+        }, 900);
+      }
+
+      window.explainConcept = function () {
+        document.getElementById("aiQuestionInput").value = "Explain: ";
+      };
+      window.generateQuiz = function () { addAIMessage("Quiz: What is 15% of 200? Answer: 30", false); };
+      window.summarizeNotes = function () {
+        const n = JSON.parse(localStorage.getItem("notes") || "[]");
+        addAIMessage(n.length === 0 ? "No notes yet!" : "You have " + n.length + " notes.", false);
+      };
+      window.studyTips = function () {
+        addAIMessage("Tips: 1. Active Recall 2. Pomodoro 3. Spaced Repetition 4. Teach others 5. Sleep!", false);
+      };
+
+      window.createStudyRoom = function () { alert("Study rooms need Firebase setup to work in OneCompiler."); };
+      window.joinStudyRoom = function () { alert("Study rooms need Firebase setup to work in OneCompiler."); };
+      window.leaveStudyRoom = function () {};
+      window.syncWhiteboard = function () { document.getElementById("syncStatus").textContent = "Synced!"; };
+      window.sendChat = function () {};
+      window.copyRoomCode = function () {};
+      window.startSharedPomodoro = function () {};         
+      window.pauseSharedPomodoro = function () {};
+      window.resetSharedPomodoro = function () {};
+      window.loadSharedQuiz = function () {};
+
+      updateAISuggestions();
+      renderNotes();
+      renderFlashcardDeck();
+      updateDashboardStats();
+    })();
+  </script>
+</body>
+</html>
