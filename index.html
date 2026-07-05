@@ -944,8 +944,13 @@ button:active {
   padding: 32px;
   display: flex;
   gap: 20px;
-  
-  width:100%;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
 }
 
 header {
@@ -973,16 +978,22 @@ header h1 {
   margin-top: 6px;
 }
 
-/* VERTICAL SIDEBAR TABS */
+/* LEFT NAV BAR */
 .tabs {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: 200px;
+  width: 220px;
   flex-shrink: 0;
-  height: fit-content;
+  height: calc(100vh - 64px);
   position: sticky;
   top: 32px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
 .tab {
@@ -1018,7 +1029,7 @@ header h1 {
 /* TAB CONTENT AREA */
 .tab-content-wrapper {
   flex: 1;
-  min-width: 500px;
+  min-width: 0;
 }
 
 .tab-content {
@@ -2141,6 +2152,7 @@ header h1 {
     overflow-x: auto;
     position: relative;
     top: auto;
+    height: auto;
   }
   
   .tab-content-wrapper {
@@ -2301,30 +2313,6 @@ header h1 {
       <div class="hero-section">
         <h1  class="hero-title" style="font-size: 100px;">A Place Where You Get  <span class="highlight">Knowlage</span></h1>
         <p class="hero-subtitle">Your magical journey to knowledge begins here! ✨</p>
-        
-        
-
-        <div class="floating-elements">
-          <span class="float-item float-book">📚</span>
-          <span class="float-item float-pencil">✏️</span>
-          <span class="float-item float-star">⭐</span>
-          <span class="float-item float-bulb">💡</span>
-          <span class="float-item float-rocket">🚀</span>
-          <span class="float-item float-rainbow">🌈</span>
-        </div>
-
-        <div class="hero-description">
-          <p class="desc-main">🌟 This is a <strong>wonderful learning app</strong> designed to make studying fun and engaging!</p>
-          <p class="desc-detail">🎯 Track your work, take quizzes, use flashcards, study with AI tutor, and learn with friends!</p>
-          <div class="feature-badges">
-            <span class="badge">📝 Notes</span>
-            <span class="badge">⏰ Pomodoro</span>
-            <span class="badge">🧠 Quizzes</span>
-            <span class="badge">🤖 AI Tutor</span>
-            <span class="badge">👥 Study Partners</span>
-            <span class="badge">🎵 Study Music</span>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -2394,7 +2382,6 @@ header h1 {
         <h1 class="loading-title">Avro</h1>
       </div>
       
-      <!-- RUNNING CAT ANIMATION -->
       <div class="running-cat-container">
         <div class="running-cat">
           <div class="cat-head">
@@ -2430,11 +2417,308 @@ header h1 {
   </div>
 
   <!-- MAIN APP -->
-  <div class=" container hidden app-layout" id="appScreen">
-    <header>
-      <h1>Dashboard</h1>
-      <p id="welcomeUser" class="welcome-user"></p>
-    </header>
+  <div class="container hidden app-layout" id="appScreen">
+    <div class="app-main">
+      <header>
+        <h1>Dashboard</h1>
+        <p id="welcomeUser" class="welcome-user"></p>
+      </header>
+
+      <div class="tab-content-wrapper">
+        <div class="tab-content active" id="dashboard">
+          <h2>Your Learning Dashboard</h2>
+          <div class="stats-grid">
+            <div class="stat-card"><h3>Notes</h3><p id="notesCount">0</p></div>
+            <div class="stat-card"><h3>Study Hours</h3><p id="studyHours">0</p></div>
+            <div class="stat-card"><h3>Tasks Done</h3><p id="tasksDone">0</p></div>
+            <div class="stat-card"><h3>Flashcards</h3><p id="flashcardCount">0</p></div>
+          </div>
+          <div class="quick-actions">
+            <button onclick="showTab(event, 'pomodoro')">Start Timer</button>
+            <button onclick="showTab(event, 'quizzes')">Take a Quiz</button>
+            <button onclick="showTab(event, 'notes')">Write Notes</button>
+            <button onclick="showTab(event, 'aiTutor')">Ask AI Tutor</button>
+          </div>
+        </div>
+
+        <div class="tab-content" id="workTracker">
+          <h2>Work Tracker</h2>
+          <div class="input-row">
+            <input type="text" id="workInput" placeholder="Add a task..." />
+            <input type="date" id="workDeadline" />
+            <button onclick="addWork()">Add Task</button>
+          </div>
+          <div class="filter-row">
+            <button onclick="filterWork(event, 'all')" class="filter-btn active">All</button>
+            <button onclick="filterWork(event, 'pending')" class="filter-btn">Pending</button>
+            <button onclick="filterWork(event, 'done')" class="filter-btn">Done</button>
+          </div>
+          <ul id="workList"></ul>
+        </div>
+
+        <div class="tab-content" id="quizzes">
+          <h2>Quizzes</h2>
+          <div id="quizContainer">
+            <div id="quizQuestion"></div>
+            <div id="quizOptions"></div>
+            <p id="quizResult"></p>
+            <button onclick="loadQuiz()">Next Question</button>
+          </div>
+        </div>
+
+        <div class="tab-content" id="calculator">
+          <h2>Calculator</h2>
+          <div class="calculator">
+            <input type="text" id="calcDisplay" readonly placeholder="0" />
+            <div class="calc-buttons">
+              <button class="calc-btn" onclick="appendToCalc('7')">7</button>
+              <button class="calc-btn" onclick="appendToCalc('8')">8</button>
+              <button class="calc-btn" onclick="appendToCalc('9')">9</button>
+              <button class="calc-btn operator" onclick="appendToCalc('/')">/</button>
+              <button class="calc-btn" onclick="appendToCalc('4')">4</button>
+              <button class="calc-btn" onclick="appendToCalc('5')">5</button>
+              <button class="calc-btn" onclick="appendToCalc('6')">6</button>
+              <button class="calc-btn operator" onclick="appendToCalc('*')">*</button>
+              <button class="calc-btn" onclick="appendToCalc('1')">1</button>
+              <button class="calc-btn" onclick="appendToCalc('2')">2</button>
+              <button class="calc-btn" onclick="appendToCalc('3')">3</button>
+              <button class="calc-btn operator" onclick="appendToCalc('-')">-</button>
+              <button class="calc-btn" onclick="appendToCalc('0')">0</button>
+              <button class="calc-btn" onclick="appendToCalc('.')">.</button>
+              <button class="calc-btn equals" onclick="calculate()">=</button>
+              <button class="calc-btn operator" onclick="appendToCalc('+')">+</button>
+              <button class="calc-btn clear" onclick="clearCalc()">C</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="pomodoro">
+          <h2>Pomodoro Timer</h2>
+          <div class="timer-display" id="timerDisplay">25:00</div>
+          <div class="timer-controls">
+            <button onclick="startPomodoro()">Start</button>
+            <button onclick="pausePomodoro()">Pause</button>
+            <button onclick="resetPomodoro()">Reset</button>
+          </div>
+          <div class="timer-presets">
+            <button onclick="setPomodoro(45)">1 hour</button>
+            <button onclick="setPomodoro(45)">45 min</button> 
+            <button onclick="setPomodoro(25)">25 min</button>
+            <button onclick="setPomodoro(15)">15 min</button>
+            <button onclick="setPomodoro(5)">5 min</button>
+          </div>
+          <p id="pomodoroStatus"></p>
+        </div>
+
+        <div class="tab-content" id="flashcards">
+          <h2>Flashcards</h2>
+          <div class="input-row">
+            <input type="text" id="flashcardQuestion" placeholder="Question" />
+            <input type="text" id="flashcardAnswer" placeholder="Answer" />
+            <button onclick="addFlashcard()">Add Card</button>
+          </div>
+          <div id="flashcardDeck"></div>
+          <div class="flashcard-viewer hidden" id="flashcardViewer">
+            <div class="flashcard" id="currentFlashcard" onclick="flipFlashcard()">
+              <span id="flashcardText">Click to flip</span>
+            </div>
+            <button onclick="nextFlashcard()">Next Card</button>
+          </div>
+          <button onclick="studyFlashcards()">Study Deck</button>
+        </div>
+
+        <div class="tab-content" id="notes">
+          <h2>Notes</h2>
+          <input type="text" id="noteTitle" placeholder="Note title..." />
+          <textarea id="noteContent" placeholder="Write your notes here..."></textarea>
+          <button onclick="saveNote()">Save Note</button>
+          <div id="notesList"></div>
+        </div>
+
+        <div class="tab-content" id="aiTutor">
+          <h2>AI Learning Tutor</h2>
+          <p class="ai-subtitle">Your personal AI teacher — ask anything, learn everything</p>
+          
+          <div class="ai-tutor-container">
+            <div class="ai-subject-selector">
+              <h3>Select Subject</h3>
+              <div class="subject-chips">
+                <button class="subject-chip active" onclick="setAISubject('general', this)">General</button>
+                <button class="subject-chip" onclick="setAISubject('math', this)">Math</button>
+                <button class="subject-chip" onclick="setAISubject('science', this)">Science</button>
+                <button class="subject-chip" onclick="setAISubject('history', this)">History</button>
+                <button class="subject-chip" onclick="setAISubject('language', this)">Language</button>
+                <button class="subject-chip" onclick="setAISubject('coding', this)">Coding</button>
+              </div>
+            </div>
+
+            <div class="ai-suggestions">
+              <h3>Suggested Questions</h3>
+              <div id="aiSuggestionsList" class="suggestions-list"></div>
+            </div>
+
+            <div class="ai-chat-area">
+              <div class="ai-chat-messages" id="aiChatMessages">
+                <div class="ai-message ai-message-bot">
+                  <div class="ai-avatar">AI</div>
+                  <div class="ai-bubble">
+                    <p>Hello! I'm your AI tutor. I can help you learn any subject. Try asking me:</p>
+                    <ul>
+                      <li>"Explain photosynthesis in simple terms"</li>
+                      <li>"How do I solve quadratic equations?"</li>
+                      <li>"What caused World War II?"</li>
+                      <li>"Help me understand JavaScript loops"</li>
+                    </ul>
+                    <p>What would you like to learn today?</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="ai-typing-indicator hidden" id="aiTypingIndicator">
+                <div class="ai-avatar">AI</div>
+                <div class="ai-bubble typing-bubble">
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                </div>
+              </div>
+
+              <div class="ai-input-row">
+                <textarea id="aiQuestionInput" placeholder="Ask your AI tutor anything..." rows="2"></textarea>
+                <button onclick="askAITutor()" id="aiSendBtn">Ask</button>
+              </div>
+              
+              <div class="ai-actions">
+                <button onclick="explainConcept()" class="ai-action-btn">Explain a Concept</button>
+                <button onclick="generateQuiz()" class="ai-action-btn">Generate Quiz</button>
+                <button onclick="summarizeNotes()" class="ai-action-btn">Summarize My Notes</button>
+                <button onclick="studyTips()" class="ai-action-btn">Study Tips</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tools">
+          <h2>Discover Learning Tools</h2>
+          <div class="tools-grid">
+            <div class="tool-card"><h3>Khan Academy</h3><p>Free courses on all subjects</p></div>
+            <div class="tool-card"><h3>Coursera</h3><p>University-level courses</p></div>
+            <div class="tool-card"><h3>freeCodeCamp</h3><p>Learn coding for free</p></div>
+            <div class="tool-card"><h3>Quizlet</h3><p>Study with flashcards</p></div>
+            <div class="tool-card"><h3>Duolingo</h3><p>Learn languages</p></div>
+            <div class="tool-card"><h3>Brilliant</h3><p>Math & science learning</p></div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="music">
+          <h2>Study Music</h2>
+          <div class="music-player">
+            <p class="now-playing">Now Playing: Lo-fi Beats</p>
+            <div class="music-controls">
+              <button onclick="toggleMusic()" id="playBtn">Play</button>
+              <button onclick="stopMusic()">Stop</button>
+            </div>
+            <div class="playlist">
+              <p onclick="selectTrack('Lo-fi Beats')">Lo-fi Beats</p>
+              <p onclick="selectTrack('Classical Piano')">Classical Piano</p>
+              <p onclick="selectTrack('Nature Sounds')">Nature Sounds</p>
+              <p onclick="selectTrack('Jazz Study')">Jazz Study</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="partners">
+          <h2>Study Partners</h2>
+          <p id="firebaseStatus" style="text-align:center;color:#64748b;font-size:12px;margin-bottom:8px;"></p>
+          
+          <div id="partnerLobby">
+            <h3>Start a Study Session</h3>
+            <p>Create a study room and share the code with a friend on any device!</p>
+            
+            <div class="study-room-actions">
+              <div class="room-card">
+                <h4>Create a Study Room</h4>
+                <p>Generate a room code and share it with your friend</p>
+                <input type="text" id="roomNameInput" placeholder="Room name (e.g., Math Study)" />
+                <button onclick="createStudyRoom()">Create Room</button>
+                <div id="createdRoomInfo" class="hidden">
+                  <p class="room-code-display">Room Code: <strong id="roomCodeDisplay"></strong></p>
+                  <p class="copy-hint">Share this code with your friend</p>
+                  <button onclick="copyRoomCode()">Copy Room Code</button>
+                </div>
+              </div>
+              
+              <div class="room-card">
+                <h4>Join a Study Room</h4>
+                <p>Enter the room code your friend shared with you</p>
+                <input type="text" id="joinRoomCode" placeholder="Enter room code..." />
+                <button onclick="joinStudyRoom()">Join Room</button>
+                <p id="joinError" class="error-msg hidden">Room not found. Check the code and try again.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="studyRoom" class="hidden">
+            <div class="room-header">
+              <h3 id="roomTitle"></h3>
+              <p>Room Code: <strong id="activeRoomCode"></strong></p>
+              <button onclick="leaveStudyRoom()" class="leave-btn">Leave Room</button>
+            </div>
+            
+            <div class="room-content">
+              <div class="participants-panel">
+                <h4>Participants</h4>
+                <ul id="participantsList">
+                  <li class="participant you">You (Host)</li>
+                </ul>
+              </div>
+              
+              <div class="collaboration-area">
+                <h4>Shared Whiteboard</h4>
+                <textarea id="sharedWhiteboard" placeholder="Write notes here that your study partner can see..."></textarea>
+                <button onclick="syncWhiteboard()">Sync with Partner</button>
+                <p id="syncStatus"></p>
+              </div>
+              
+              <div class="chat-area">
+                <h4>Study Chat</h4>
+                <div id="chatMessages"></div>
+                <div class="chat-input-row">
+                  <input type="text" id="chatInput" placeholder="Type a message..." />
+                  <button onclick="sendChat()">Send</button>
+                </div>
+              </div>
+              
+              <div class="shared-timer">
+                <h4>Shared Pomodoro Timer</h4>
+                <div class="timer-display" id="sharedTimerDisplay">25:00</div>
+                <div class="timer-controls">
+                  <button onclick="startSharedPomodoro()">Start Together</button>
+                  <button onclick="pauseSharedPomodoro()">Pause</button>
+                  <button onclick="resetSharedPomodoro()">Reset</button>
+                </div>
+                <p id="sharedTimerStatus"></p>
+              </div>
+
+              <div class="shared-quiz">
+                <h4>Quiz Together</h4>
+                <div id="sharedQuizQuestion"></div>
+                <div id="sharedQuizOptions"></div>
+                <p id="sharedQuizResult"></p>
+                <button onclick="loadSharedQuiz()">Next Question</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="question">
+          <h2>Ask a Question</h2>
+          <textarea id="questionInput" placeholder="Type your question here..."></textarea>
+          <button onclick="askQuestion()">Ask</button>
+          <div id="questionAnswer"></div>
+        </div>
+      </div>
+    </div>
 
     <div class="tabs">
       <button class="tab active" onclick="showTab(event, 'dashboard')">Dashboard</button>
@@ -2449,299 +2733,6 @@ header h1 {
       <button class="tab" onclick="showTab(event, 'music')">Study Music</button>
       <button class="tab" onclick="showTab(event, 'partners')">Study Partners</button>
       <button class="tab" onclick="showTab(event, 'question')">Ask a Question</button>
-    </div>
-
-    <div class="tab-content active" id="dashboard">
-      <h2>Your Learning Dashboard</h2>
-      <div class="stats-grid">
-        <div class="stat-card"><h3>Notes</h3><p id="notesCount">0</p></div>
-        <div class="stat-card"><h3>Study Hours</h3><p id="studyHours">0</p></div>
-        <div class="stat-card"><h3>Tasks Done</h3><p id="tasksDone">0</p></div>
-        <div class="stat-card"><h3>Flashcards</h3><p id="flashcardCount">0</p></div>
-      </div>
-      <div class="quick-actions">
-        <button onclick="showTab(event, 'pomodoro')">Start Timer</button>
-        <button onclick="showTab(event, 'quizzes')">Take a Quiz</button>
-        <button onclick="showTab(event, 'notes')">Write Notes</button>
-        <button onclick="showTab(event, 'aiTutor')">Ask AI Tutor</button>
-      </div>
-    </div>
-
-    <div class="tab-content" id="workTracker">
-      <h2>Work Tracker</h2>
-      <div class="input-row">
-        <input type="text" id="workInput" placeholder="Add a task..." />
-        <input type="date" id="workDeadline" />
-        <button onclick="addWork()">Add Task</button>
-      </div>
-      <div class="filter-row">
-        <button onclick="filterWork(event, 'all')" class="filter-btn active">All</button>
-        <button onclick="filterWork(event, 'pending')" class="filter-btn">Pending</button>
-        <button onclick="filterWork(event, 'done')" class="filter-btn">Done</button>
-      </div>
-      <ul id="workList"></ul>
-    </div>
-
-    <div class="tab-content" id="quizzes">
-      <h2>Quizzes</h2>
-      <div id="quizContainer">
-        <div id="quizQuestion"></div>
-        <div id="quizOptions"></div>
-        <p id="quizResult"></p>
-        <button onclick="loadQuiz()">Next Question</button>
-      </div>
-    </div>
-
-    <div class="tab-content" id="calculator">
-      <h2>Calculator</h2>
-      <div class="calculator">
-        <input type="text" id="calcDisplay" readonly placeholder="0" />
-        <div class="calc-buttons">
-          <button class="calc-btn" onclick="appendToCalc('7')">7</button>
-          <button class="calc-btn" onclick="appendToCalc('8')">8</button>
-          <button class="calc-btn" onclick="appendToCalc('9')">9</button>
-          <button class="calc-btn operator" onclick="appendToCalc('/')">/</button>
-          <button class="calc-btn" onclick="appendToCalc('4')">4</button>
-          <button class="calc-btn" onclick="appendToCalc('5')">5</button>
-          <button class="calc-btn" onclick="appendToCalc('6')">6</button>
-          <button class="calc-btn operator" onclick="appendToCalc('*')">*</button>
-          <button class="calc-btn" onclick="appendToCalc('1')">1</button>
-          <button class="calc-btn" onclick="appendToCalc('2')">2</button>
-          <button class="calc-btn" onclick="appendToCalc('3')">3</button>
-          <button class="calc-btn operator" onclick="appendToCalc('-')">-</button>
-          <button class="calc-btn" onclick="appendToCalc('0')">0</button>
-          <button class="calc-btn" onclick="appendToCalc('.')">.</button>
-          <button class="calc-btn equals" onclick="calculate()">=</button>
-          <button class="calc-btn operator" onclick="appendToCalc('+')">+</button>
-          <button class="calc-btn clear" onclick="clearCalc()">C</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="pomodoro">
-      <h2>Pomodoro Timer</h2>
-      <div class="timer-display" id="timerDisplay">25:00</div>
-      <div class="timer-controls">
-        <button onclick="startPomodoro()">Start</button>
-        <button onclick="pausePomodoro()">Pause</button>
-        <button onclick="resetPomodoro()">Reset</button>
-      </div>
-      <div class="timer-presets">
-        <button onclick="setPomodoro(45)">1 hour</button>
-        <button onclick="setPomodoro(45)">45 min</button> 
-        <button onclick="setPomodoro(25)">25 min</button>
-        <button onclick="setPomodoro(15)">15 min</button>
-         <button onclick="setPomodoro(5)">5 min</button>
-      </div>
-      <p id="pomodoroStatus"></p>
-    </div>
-
-    <div class="tab-content" id="flashcards">
-      <h2>Flashcards</h2>
-      <div class="input-row">
-        <input type="text" id="flashcardQuestion" placeholder="Question" />
-        <input type="text" id="flashcardAnswer" placeholder="Answer" />
-        <button onclick="addFlashcard()">Add Card</button>
-      </div>
-      <div id="flashcardDeck"></div>
-      <div class="flashcard-viewer hidden" id="flashcardViewer">
-        <div class="flashcard" id="currentFlashcard" onclick="flipFlashcard()">
-          <span id="flashcardText">Click to flip</span>
-        </div>
-        <button onclick="nextFlashcard()">Next Card</button>
-      </div>
-      <button onclick="studyFlashcards()">Study Deck</button>
-    </div>
-
-    <div class="tab-content" id="notes">
-      <h2>Notes</h2>
-      <input type="text" id="noteTitle" placeholder="Note title..." />
-      <textarea id="noteContent" placeholder="Write your notes here..."></textarea>
-      <button onclick="saveNote()">Save Note</button>
-      <div id="notesList"></div>
-    </div>
-
-    <div class="tab-content" id="aiTutor">
-      <h2>AI Learning Tutor</h2>
-      <p class="ai-subtitle">Your personal AI teacher — ask anything, learn everything</p>
-      
-      <div class="ai-tutor-container">
-        <div class="ai-subject-selector">
-          <h3>Select Subject</h3>
-          <div class="subject-chips">
-            <button class="subject-chip active" onclick="setAISubject('general', this)">General</button>
-            <button class="subject-chip" onclick="setAISubject('math', this)">Math</button>
-            <button class="subject-chip" onclick="setAISubject('science', this)">Science</button>
-            <button class="subject-chip" onclick="setAISubject('history', this)">History</button>
-            <button class="subject-chip" onclick="setAISubject('language', this)">Language</button>
-            <button class="subject-chip" onclick="setAISubject('coding', this)">Coding</button>
-          </div>
-        </div>
-
-        <div class="ai-suggestions">
-          <h3>Suggested Questions</h3>
-          <div id="aiSuggestionsList" class="suggestions-list"></div>
-        </div>
-
-        <div class="ai-chat-area">
-          <div class="ai-chat-messages" id="aiChatMessages">
-            <div class="ai-message ai-message-bot">
-              <div class="ai-avatar">AI</div>
-              <div class="ai-bubble">
-                <p>Hello! I'm your AI tutor. I can help you learn any subject. Try asking me:</p>
-                <ul>
-                  <li>"Explain photosynthesis in simple terms"</li>
-                  <li>"How do I solve quadratic equations?"</li>
-                  <li>"What caused World War II?"</li>
-                  <li>"Help me understand JavaScript loops"</li>
-                </ul>
-                <p>What would you like to learn today?</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="ai-typing-indicator hidden" id="aiTypingIndicator">
-            <div class="ai-avatar">AI</div>
-            <div class="ai-bubble typing-bubble">
-              <span class="typing-dot"></span>
-              <span class="typing-dot"></span>
-              <span class="typing-dot"></span>
-            </div>
-          </div>
-
-          <div class="ai-input-row">
-            <textarea id="aiQuestionInput" placeholder="Ask your AI tutor anything..." rows="2"></textarea>
-            <button onclick="askAITutor()" id="aiSendBtn">Ask</button>
-          </div>
-          
-          <div class="ai-actions">
-            <button onclick="explainConcept()" class="ai-action-btn">Explain a Concept</button>
-            <button onclick="generateQuiz()" class="ai-action-btn">Generate Quiz</button>
-            <button onclick="summarizeNotes()" class="ai-action-btn">Summarize My Notes</button>
-            <button onclick="studyTips()" class="ai-action-btn">Study Tips</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="tools">
-      <h2>Discover Learning Tools</h2>
-      <div class="tools-grid">
-        <div class="tool-card"><h3>Khan Academy</h3><p>Free courses on all subjects</p></div>
-        <div class="tool-card"><h3>Coursera</h3><p>University-level courses</p></div>
-        <div class="tool-card"><h3>freeCodeCamp</h3><p>Learn coding for free</p></div>
-        <div class="tool-card"><h3>Quizlet</h3><p>Study with flashcards</p></div>
-        <div class="tool-card"><h3>Duolingo</h3><p>Learn languages</p></div>
-        <div class="tool-card"><h3>Brilliant</h3><p>Math & science learning</p></div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="music">
-      <h2>Study Music</h2>
-      <div class="music-player">
-        <p class="now-playing">Now Playing: Lo-fi Beats</p>
-        <div class="music-controls">
-          <button onclick="toggleMusic()" id="playBtn">Play</button>
-          <button onclick="stopMusic()">Stop</button>
-        </div>
-        <div class="playlist">
-          <p onclick="selectTrack('Lo-fi Beats')">Lo-fi Beats</p>
-          <p onclick="selectTrack('Classical Piano')">Classical Piano</p>
-          <p onclick="selectTrack('Nature Sounds')">Nature Sounds</p>
-          <p onclick="selectTrack('Jazz Study')">Jazz Study</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="partners">
-      <h2>Study Partners</h2>
-      <p id="firebaseStatus" style="text-align:center;color:#64748b;font-size:12px;margin-bottom:8px;"></p>
-      
-      <div id="partnerLobby">
-        <h3>Start a Study Session</h3>
-        <p>Create a study room and share the code with a friend on any device!</p>
-        
-        <div class="study-room-actions">
-          <div class="room-card">
-            <h4>Create a Study Room</h4>
-            <p>Generate a room code and share it with your friend</p>
-            <input type="text" id="roomNameInput" placeholder="Room name (e.g., Math Study)" />
-            <button onclick="createStudyRoom()">Create Room</button>
-            <div id="createdRoomInfo" class="hidden">
-              <p class="room-code-display">Room Code: <strong id="roomCodeDisplay"></strong></p>
-              <p class="copy-hint">Share this code with your friend</p>
-              <button onclick="copyRoomCode()">Copy Room Code</button>
-            </div>
-          </div>
-          
-          <div class="room-card">
-            <h4>Join a Study Room</h4>
-            <p>Enter the room code your friend shared with you</p>
-            <input type="text" id="joinRoomCode" placeholder="Enter room code..." />
-            <button onclick="joinStudyRoom()">Join Room</button>
-            <p id="joinError" class="error-msg hidden">Room not found. Check the code and try again.</p>
-          </div>
-        </div>
-      </div>
-
-      <div id="studyRoom" class="hidden">
-        <div class="room-header">
-          <h3 id="roomTitle"></h3>
-          <p>Room Code: <strong id="activeRoomCode"></strong></p>
-          <button onclick="leaveStudyRoom()" class="leave-btn">Leave Room</button>
-        </div>
-        
-        <div class="room-content">
-          <div class="participants-panel">
-            <h4>Participants</h4>
-            <ul id="participantsList">
-              <li class="participant you">You (Host)</li>
-            </ul>
-          </div>
-          
-          <div class="collaboration-area">
-            <h4>Shared Whiteboard</h4>
-            <textarea id="sharedWhiteboard" placeholder="Write notes here that your study partner can see..."></textarea>
-            <button onclick="syncWhiteboard()">Sync with Partner</button>
-            <p id="syncStatus"></p>
-          </div>
-          
-          <div class="chat-area">
-            <h4>Study Chat</h4>
-            <div id="chatMessages"></div>
-            <div class="chat-input-row">
-              <input type="text" id="chatInput" placeholder="Type a message..." />
-              <button onclick="sendChat()">Send</button>
-            </div>
-          </div>
-          
-          <div class="shared-timer">
-            <h4>Shared Pomodoro Timer</h4>
-            <div class="timer-display" id="sharedTimerDisplay">25:00</div>
-            <div class="timer-controls">
-              <button onclick="startSharedPomodoro()">Start Together</button>
-              <button onclick="pauseSharedPomodoro()">Pause</button>
-              <button onclick="resetSharedPomodoro()">Reset</button>
-            </div>
-            <p id="sharedTimerStatus"></p>
-          </div>
-
-          <div class="shared-quiz">
-            <h4>Quiz Together</h4>
-            <div id="sharedQuizQuestion"></div>
-            <div id="sharedQuizOptions"></div>
-            <p id="sharedQuizResult"></p>
-            <button onclick="loadSharedQuiz()">Next Question</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="question">
-      <h2>Ask a Question</h2>
-      <textarea id="questionInput" placeholder="Type your question here..."></textarea>
-      <button onclick="askQuestion()">Ask</button>
-      <div id="questionAnswer"></div>
     </div>
   </div>
 
@@ -2763,13 +2754,11 @@ header h1 {
         agreementModal.classList.remove("active");
       };
 
-      // Show agreement on link navigation
       document.addEventListener("click", function(e) {
         if (e.target.tagName === "A" && e.target.href && !agreementAccepted) {
           e.preventDefault();
           agreementModal.classList.add("active");
-          const targetUrl = e.target.href;
-          window.currentTargetUrl = targetUrl;
+          window.currentTargetUrl = e.target.href;
         }
       });
 
@@ -3126,7 +3115,7 @@ header h1 {
       window.syncWhiteboard = function () { document.getElementById("syncStatus").textContent = "Synced!"; };
       window.sendChat = function () {};
       window.copyRoomCode = function () {};
-      window.startSharedPomodoro = function () {};         
+      window.startSharedPomodoro = function () {};
       window.pauseSharedPomodoro = function () {};
       window.resetSharedPomodoro = function () {};
       window.loadSharedQuiz = function () {};
